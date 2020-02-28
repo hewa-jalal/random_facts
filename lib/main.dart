@@ -1,23 +1,29 @@
+import 'dart:core';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_tindercard/flutter_tindercard.dart';
+import 'package:hive/hive.dart';
+import 'package:path_provider/path_provider.dart' as path_provider;
 import 'package:random_color/random_color.dart';
+import 'package:random_facts/constants.dart';
 import 'package:random_facts/facts.dart';
 import 'package:random_facts/facts_bank.dart';
-import 'package:random_facts/favourite_facts.dart';
+
+import 'facts.dart';
+import 'favourite_facts.dart';
 
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        title: "Random Facts",
-        theme: ThemeData(
-            primarySwatch: Colors.blue, scaffoldBackgroundColor: Colors.blue),
-        home: RandomFactsPage());
+      title: "Random Facts",
+      theme: ThemeData(
+          primarySwatch: Colors.blue, scaffoldBackgroundColor: Colors.blue),
+      home: RandomFactsPage(),
+    );
   }
 }
 
@@ -28,8 +34,11 @@ class RandomFactsPage extends StatefulWidget {
 
 class _RandomFactsPageState extends State<RandomFactsPage>
     with TickerProviderStateMixin {
-  Fact savedFact;
+  Box myBox;
 
+  List<Fact> factList = FactsBank.factList;
+
+  Fact savedFact;
   bool isRight = false;
 
   static Color getRandomColor() {
@@ -39,12 +48,9 @@ class _RandomFactsPageState extends State<RandomFactsPage>
     return _color;
   }
 
-  List<Fact> factList = FactsBank.factList;
-
   @override
   Widget build(BuildContext context) {
     CardController controller;
-
     return Scaffold(
       floatingActionButton: FloatingActionButton(
         child: Icon(
@@ -53,14 +59,8 @@ class _RandomFactsPageState extends State<RandomFactsPage>
           color: Colors.white,
         ),
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) {
-                return FavouriteFacts();
-              },
-            ),
-          );
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => FavouriteFacts()));
         },
         backgroundColor: Colors.red,
         foregroundColor: Colors.black,
@@ -83,7 +83,7 @@ class _RandomFactsPageState extends State<RandomFactsPage>
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(34),
                 ),
-                color: factList[index].factColor,
+                color: Color(factList[index].factColor),
                 child: Center(
                   child: Padding(
                     padding: const EdgeInsets.all(14.0),
@@ -111,12 +111,14 @@ class _RandomFactsPageState extends State<RandomFactsPage>
               isRight = true;
             }
           },
-          swipeCompleteCallback: (CardSwipeOrientation orientation, int index) {
-            /// Get orientation & index of swiped card!
+          swipeCompleteCallback:
+              (CardSwipeOrientation orientation, int index) async {
+            // Get orientation & index of swiped card!
             savedFact = factList[index];
             if (isRight) {
-              FactsBank.favouriteFacts.add(savedFact);
+//              FactsBank.favouriteFacts.add(savedFact);
               isRight = false;
+              myBox.add(savedFact);
             }
           },
         ),
@@ -127,6 +129,16 @@ class _RandomFactsPageState extends State<RandomFactsPage>
   @override
   void initState() {
     super.initState();
+    initializeHive();
+    factList.shuffle();
+  }
+
+  void initializeHive() async {
+    final appDocumentary =
+        await path_provider.getApplicationDocumentsDirectory();
+    Hive.init(appDocumentary.path);
+    Hive.registerAdapter(FactAdapter());
+    myBox = await Hive.openBox(factData);
   }
 
 //  @override

@@ -12,17 +12,12 @@ class FactsBank {
   }
 
   static List<Fact> factList = [
-    Fact('At birth, a baby panda is smaller than a mouse.', getRandomColor()),
+    Fact('At birth, a baby panda is smaller than a mouse.',
+        getRandomColor().value),
     Fact('The only letter that doesn’t appear on the periodic table is J',
-        getRandomColor()),
-    Fact(
-        'Sunflowers can help clean radioactive soil. Japan is using this to rehabilitate Fukashima. Almost 10,000 packets of sunflower seeds have been sold to the people of the city.',
-        getRandomColor()),
+        getRandomColor().value),
+    Fact('Sunflowers can help clean radioactive soil.', getRandomColor().value),
   ];
 
   static List<Fact> favouriteFacts = [];
-
-  void add(String text, Color color) {
-    factList.add(Fact(text, color));
-  }
 }

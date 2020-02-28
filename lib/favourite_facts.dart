@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:random_facts/SharedPref.dart';
-import 'package:random_facts/facts_bank.dart';
+import 'package:hive/hive.dart';
+import 'package:random_facts/constants.dart';
+
+import 'facts.dart';
 
 class FavouriteFacts extends StatefulWidget {
   @override
@@ -8,8 +10,6 @@ class FavouriteFacts extends StatefulWidget {
 }
 
 class _FavouriteFactsState extends State<FavouriteFacts> {
-  SharedPref sharedPref = SharedPref();
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -18,17 +18,18 @@ class _FavouriteFactsState extends State<FavouriteFacts> {
       ),
       body: ListView.builder(
         itemBuilder: (_, index) {
+          final fact = Hive.box(factData).getAt(index) as Fact;
           return Container(
             margin: EdgeInsets.symmetric(horizontal: 4, vertical: 1),
             child: Card(
               elevation: 10,
-              color: FactsBank.favouriteFacts[index].factColor,
+              color: Color(fact.factColor),
               child: Align(
                 alignment: Alignment.topLeft,
                 child: Padding(
                   padding: const EdgeInsets.all(8),
                   child: Text(
-                    FactsBank.favouriteFacts[index].factText,
+                    fact.factText,
                     style: TextStyle(
                         fontSize: 32,
                         color: Colors.black,
@@ -41,8 +42,13 @@ class _FavouriteFactsState extends State<FavouriteFacts> {
             ),
           );
         },
-        itemCount: FactsBank.favouriteFacts.length,
+        itemCount: Hive.box(factData).length,
       ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
   }
 }
