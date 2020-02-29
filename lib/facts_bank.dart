@@ -18,6 +18,4 @@ class FactsBank {
         getRandomColor().value),
     Fact('Sunflowers can help clean radioactive soil.', getRandomColor().value),
   ];
-
-  static List<Fact> favouriteFacts = [];
 }

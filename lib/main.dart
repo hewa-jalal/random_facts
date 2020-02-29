@@ -2,7 +2,9 @@ import 'dart:core';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_tindercard/flutter_tindercard.dart';
+import 'package:giffy_dialog/giffy_dialog.dart';
 import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart' as path_provider;
 import 'package:random_color/random_color.dart';
@@ -32,11 +34,12 @@ class RandomFactsPage extends StatefulWidget {
   _RandomFactsPageState createState() => _RandomFactsPageState();
 }
 
-class _RandomFactsPageState extends State<RandomFactsPage>
-    with TickerProviderStateMixin {
-  Box myBox;
+Box introDialogBox;
 
+class _RandomFactsPageState extends State<RandomFactsPage> {
+  Box factsBox;
   List<Fact> factList = FactsBank.factList;
+  bool isDuplicate;
 
   Fact savedFact;
   bool isRight = false;
@@ -76,31 +79,33 @@ class _RandomFactsPageState extends State<RandomFactsPage>
           maxHeight: MediaQuery.of(context).size.width * 0.9,
           minWidth: MediaQuery.of(context).size.width * 0.8,
           minHeight: MediaQuery.of(context).size.width * 0.8,
-          cardBuilder: (context, index) => Center(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-              child: Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(34),
-                ),
-                color: Color(factList[index].factColor),
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(14.0),
-                    child: Text(
-                      "${factList[index].factText}",
-                      maxLines: 3,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 30,
-                        color: Colors.black,
+          cardBuilder: (context, index) {
+            return Center(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                child: Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(34),
+                  ),
+                  color: Color(factList[index].factColor),
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(14.0),
+                      child: Text(
+                        '${factList[index].factText}',
+                        maxLines: 3,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 30,
+                          color: Colors.black,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
           cardController: controller = CardController(),
           swipeUpdateCallback: (DragUpdateDetails details, Alignment align) {
             if (align.x < 0) {
@@ -115,11 +120,8 @@ class _RandomFactsPageState extends State<RandomFactsPage>
               (CardSwipeOrientation orientation, int index) async {
             // Get orientation & index of swiped card!
             savedFact = factList[index];
-            if (isRight) {
-//              FactsBank.favouriteFacts.add(savedFact);
-              isRight = false;
-              myBox.add(savedFact);
-            }
+            if (isRight) {}
+            isRight = false;
           },
         ),
       ),
@@ -138,49 +140,54 @@ class _RandomFactsPageState extends State<RandomFactsPage>
         await path_provider.getApplicationDocumentsDirectory();
     Hive.init(appDocumentary.path);
     Hive.registerAdapter(FactAdapter());
-    myBox = await Hive.openBox(factData);
+    factsBox = await Hive.openBox(factData);
+    introDialogBox = await Hive.openBox(introDialog);
+//    factsBox.clear();
+//    factsBox.add(Fact('dumb', getRandomColor().value));
+    if (checkIntroCount()) startUpDialogs();
   }
 
-//  @override
-//  void initState() {
-//    super.initState();
-//    SchedulerBinding.instance.addPostFrameCallback(
-//      (_) => showDialog(
-//        context: context,
-//        builder: (BuildContext context) => AssetGiffyDialog(
-//          title: Text(
-//            "Swipe right to add card to favourits",
-//            style: TextStyle(fontSize: 28),
-//            textAlign: TextAlign.center,
-//          ),
-//          image: Image.asset("images/right.gif"),
-//          onlyOkButton: true,
-//          onOkButtonPressed: () {
-//            SchedulerBinding.instance.addPostFrameCallback(
-//              (_) => showDialog(
-//                context: context,
-//                builder: (BuildContext context) => AssetGiffyDialog(
-//                  title: Text(
-//                    "Swipe left to go to a new card",
-//                    style: TextStyle(fontSize: 28),
-//                    textAlign: TextAlign.center,
-//                  ),
-//                  image: Image.asset("images/left.gif"),
-//                  onlyOkButton: true,
-//                  buttonOkText: Text(
-//                    "Got it",
-//                    style: TextStyle(fontSize: 26, color: Colors.white),
-//                  ),
-//                  onOkButtonPressed: () {
-//                    Navigator.pop(context);
-//                  },
-//                ),
-//              ),
-//            );
-//            Navigator.pop(context);
-//          },
-//        ),
-//      ),
-//    );
-//  }
+  void startUpDialogs() {
+    SchedulerBinding.instance.addPostFrameCallback(
+      (_) => showDialog(
+        context: context,
+        builder: (BuildContext context) => AssetGiffyDialog(
+          title: Text(
+            "Swipe right to add card to favourites",
+            style: TextStyle(fontSize: 28),
+            textAlign: TextAlign.center,
+          ),
+          image: Image.asset("images/right.gif"),
+          onlyOkButton: true,
+          onOkButtonPressed: () {
+            SchedulerBinding.instance.addPostFrameCallback(
+              (_) => showDialog(
+                context: context,
+                builder: (BuildContext context) => AssetGiffyDialog(
+                  title: Text(
+                    'Swipe left to go to a new card',
+                    style: TextStyle(fontSize: 28),
+                    textAlign: TextAlign.center,
+                  ),
+                  image: Image.asset("images/left.gif"),
+                  onlyOkButton: true,
+                  buttonOkText: Text(
+                    'Got it',
+                    style: TextStyle(fontSize: 26, color: Colors.white),
+                  ),
+                  onOkButtonPressed: () {
+                    Navigator.pop(context);
+                  },
+                ),
+              ),
+            );
+            Navigator.pop(context);
+          },
+        ),
+      ),
+    );
+    introDialogBox.put('intro', 1);
+  }
+
+  bool checkIntroCount() => introDialogBox.length == 0 ? true : false;
 }
