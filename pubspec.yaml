@@ -30,7 +30,8 @@ dependencies:
   hive: ^1.4.1+1
   hive_flutter: ^0.3.0+2
   path_provider: ^1.6.1
-  equatable: ^1.1.0
+  swipe_stack: ^1.0.0
+
 
 
 

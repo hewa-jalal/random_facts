@@ -7,7 +7,6 @@ import 'package:flutter_tindercard/flutter_tindercard.dart';
 import 'package:giffy_dialog/giffy_dialog.dart';
 import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart' as path_provider;
-import 'package:random_color/random_color.dart';
 import 'package:random_facts/constants.dart';
 import 'package:random_facts/facts.dart';
 
@@ -21,7 +20,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: "Random Facts",
+      title: 'Random Facts',
       theme: ThemeData(
           primarySwatch: Colors.blue, scaffoldBackgroundColor: Colors.blue),
       home: RandomFactsPage(),
@@ -41,13 +40,8 @@ class _RandomFactsPageState extends State<RandomFactsPage> {
 
   Fact savedFact;
 
-  static Color getRandomColor() {
-    RandomColor _randomColor = RandomColor();
-    Color _color = _randomColor.randomColor(
-        colorSaturation: ColorSaturation.lowSaturation);
-    return _color;
-  }
-
+  double opacityForText = 0.0;
+  String topText = '';
   @override
   Widget build(BuildContext context) {
     CardController controller;
@@ -82,61 +76,102 @@ class _RandomFactsPageState extends State<RandomFactsPage> {
           backgroundColor: Colors.red,
           foregroundColor: Colors.black,
         ),
-        body: Container(
-          margin: EdgeInsets.only(bottom: 160),
-          child: TinderSwapCard(
-            orientation: AmassOrientation.BOTTOM,
-            totalNum: displayBox.length,
-            stackNum: 3,
-            swipeEdge: 4.0,
-            maxWidth: MediaQuery.of(context).size.width * 0.9,
-            maxHeight: MediaQuery.of(context).size.width * 0.9,
-            minWidth: MediaQuery.of(context).size.width * 0.8,
-            minHeight: MediaQuery.of(context).size.width * 0.8,
-            cardBuilder: (context, index) {
-              return Center(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                  child: Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(34),
-                    ),
-                    color: Color(displayBox.getAt(index).factColor),
-                    child: Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(14.0),
-                        child: Text(
-                          '${displayBox.getAt(index).factText}',
-                          maxLines: 3,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 30,
-                            color: Colors.black,
+        body: Stack(
+          children: <Widget>[
+            Container(
+              margin: EdgeInsets.only(bottom: 160),
+              child: TinderSwapCard(
+                orientation: AmassOrientation.BOTTOM,
+                totalNum: displayBox.length ?? 0,
+                stackNum: 3,
+                swipeEdge: 4.0,
+                maxWidth: MediaQuery.of(context).size.width * 0.9,
+                maxHeight: MediaQuery.of(context).size.width * 0.9,
+                minWidth: MediaQuery.of(context).size.width * 0.8,
+                minHeight: MediaQuery.of(context).size.width * 0.8,
+                cardBuilder: (context, index) {
+                  return Center(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+                      child: Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(34),
+                        ),
+                        color: Color(displayBox.getAt(index).factColor),
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(14.0),
+                            child: Text(
+                              '${displayBox.getAt(index).factText}',
+                              maxLines: 3,
+                              style: factTextStyle,
+                            ),
                           ),
                         ),
                       ),
                     ),
+                  );
+                },
+                cardController: controller = CardController(),
+                swipeUpdateCallback:
+                    (DragUpdateDetails details, Alignment align) {
+                  var alignFix = align.x.abs() / 10;
+                  // Get swiping card's alignment
+                  if (align.x < 0) {
+                    setState(() {
+                      topText = 'dismiss';
+                    });
+                    //Card is LEFT swiping
+                  } else if (align.x > 0) {
+                    //Card is RIGHT swiping
+                    setState(() {
+                      topText = 'add to favourites';
+                    });
+                  }
+                  setState(() {
+                    if (alignFix > 1) alignFix = 1;
+                    opacityForText = alignFix;
+                  });
+                },
+                swipeCompleteCallback:
+                    (CardSwipeOrientation orientation, int index) async {
+                  // Get orientation & index of swiped card!
+                  savedFact = displayBox.getAt(index);
+                  if (orientation == CardSwipeOrientation.RIGHT) {
+                    setState(() {
+                      factsBox.add(savedFact);
+                      topText = ' ';
+                    });
+                  } else if (orientation == CardSwipeOrientation.LEFT) {
+                    setState(() {
+                      displayBox.deleteAt(index);
+                      topText = ' ';
+                    });
+                  } else if (orientation == CardSwipeOrientation.RECOVER) {
+                    setState(() {
+                      topText = '';
+                      opacityForText = 0.0;
+                    });
+                  }
+                },
+              ),
+            ),
+            Positioned(
+              left: 90,
+              width: 300,
+              top: 60,
+              child: Opacity(
+                opacity: opacityForText,
+                child: Align(
+                  alignment: Alignment.bottomLeft,
+                  child: Text(
+                    topText,
+                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900),
                   ),
                 ),
-              );
-            },
-            cardController: controller = CardController(),
-            swipeCompleteCallback:
-                (CardSwipeOrientation orientation, int index) async {
-              // Get orientation & index of swiped card!
-              savedFact = displayBox.getAt(index);
-              if (orientation == CardSwipeOrientation.RIGHT) {
-                setState(() {
-                  factsBox.add(savedFact);
-                  displayBox.deleteAt(index);
-                });
-              } else if (orientation == CardSwipeOrientation.LEFT) {
-                setState(() {
-                  displayBox.deleteAt(index);
-                });
-              }
-            },
-          ),
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -158,16 +193,11 @@ class _RandomFactsPageState extends State<RandomFactsPage> {
     factsBox = await Hive.openBox(factData);
     displayBox = await Hive.openBox(displayBoxName);
     setState(() {
-      print('length ${displayBox.length}');
       if (displayBox.length == 0) {
         FactsBank.addBox();
         print('stuff added');
-      } else {
-        print('nothing added');
       }
     });
-//    factsBox.clear();
-//    factsBox.add(Fact('dumb', getRandomColor().value));
     if (checkIntroCount()) startUpDialogs();
   }
 
@@ -181,7 +211,7 @@ class _RandomFactsPageState extends State<RandomFactsPage> {
             style: TextStyle(fontSize: 28),
             textAlign: TextAlign.center,
           ),
-          image: Image.asset("images/right.gif"),
+          image: Image.asset('images/right.gif'),
           onlyOkButton: true,
           onOkButtonPressed: () {
             SchedulerBinding.instance.addPostFrameCallback(
@@ -193,7 +223,7 @@ class _RandomFactsPageState extends State<RandomFactsPage> {
                     style: TextStyle(fontSize: 28),
                     textAlign: TextAlign.center,
                   ),
-                  image: Image.asset("images/left.gif"),
+                  image: Image.asset('images/left.gif'),
                   onlyOkButton: true,
                   buttonOkText: Text(
                     'Got it',

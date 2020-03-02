@@ -26,5 +26,7 @@ class FactsBank {
     Fact('The only letter that doesn’t appear on the periodic table is J',
         getRandomColor().value),
     Fact('Sunflowers can help clean radioactive soil.', getRandomColor().value),
+    Fact('Sunflowers can help clean radioactive soil.', getRandomColor().value),
+    Fact('Sunflowers can help clean radioactive soil.', getRandomColor().value),
   ];
 }
